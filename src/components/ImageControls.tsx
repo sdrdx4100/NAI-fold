@@ -83,7 +83,7 @@ export function ImageControls() {
                   void generate();
                 }
               }}
-              placeholder="1girl, solo, ..."
+              placeholder={info.v5 ? '1girl, solo, ... / 日本語の文章でもOK（例：雨の夜、ネオン街に立つ少女）' : '1girl, solo, ...'}
             />
           </Field>
           <Field label="除外したい要素 Undesired Content">
@@ -100,7 +100,13 @@ export function ImageControls() {
               </select>
             </Field>
             <div style={{ paddingTop: 14 }}>
-              <Toggle label="品質タグ" checked={s.qualityToggle} onChange={(v) => set({ qualityToggle: v })} />
+              {info.v5 ? (
+                <p className="hint" style={{ margin: '8px 0 0' }}>
+                  V5は品質タグの自動追加なし（公式のタグ文字列が未公開のため）
+                </p>
+              ) : (
+                <Toggle label="品質タグ" checked={s.qualityToggle} onChange={(v) => set({ qualityToggle: v })} />
+              )}
             </div>
           </div>
         </Section>
@@ -108,14 +114,14 @@ export function ImageControls() {
         <PresetSection />
 
         {info.v4 && (
-          <Section title={`キャラクター (${s.characters.length})`} defaultOpen={s.characters.length > 0}>
+          <Section title={`キャラクター (${s.characters.length}/${info.maxCharacters})`} defaultOpen={s.characters.length > 0}>
             <Toggle label="位置を指定" desc="オフでAIにおまかせ" checked={s.useCoords} onChange={(v) => set({ useCoords: v })} />
             {s.characters.map((c, i) => (
               <CharacterCard key={c.id} c={c} idx={i} useCoords={s.useCoords} onChange={(nc) => setChar(i, nc)} onRemove={() => set({ characters: s.characters.filter((x) => x.id !== c.id) })} />
             ))}
             <button
               className="btn small"
-              disabled={s.characters.length >= 6}
+              disabled={s.characters.length >= info.maxCharacters}
               onClick={() => set({ characters: [...s.characters, { id: uid(), prompt: '', uc: '', x: 0.5, y: 0.5, enabled: true }] })}
             >
               <Icon name="user" size={14} />

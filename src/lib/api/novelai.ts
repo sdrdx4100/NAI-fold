@@ -45,7 +45,8 @@ export function buildImagePayload(req: ImageRequest, baseImageB64?: string) {
   const chars = s.characters.filter((c) => c.enabled && c.prompt.trim());
 
   const parameters: Record<string, unknown> = {
-    params_version: 3,
+    // The official web client sends 4 for V5; the server was observed to accept 0–4 identically.
+    params_version: info.v5 ? 4 : 3,
     width: s.width,
     height: s.height,
     scale: s.scale,
@@ -66,6 +67,8 @@ export function buildImagePayload(req: ImageRequest, baseImageB64?: string) {
   };
 
   if (info.v4) {
+    parameters.uncond_scale = 1;
+    parameters.prompt = prompt;
     parameters.autoSmea = false;
     parameters.skip_cfg_above_sigma = s.variety ? 19 : null;
     parameters.use_coords = s.useCoords;

@@ -2,16 +2,35 @@ import { zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from './api/mock';
 import { buildImagePayload, extractImages } from './api/novelai';
-import { DEFAULT_IMAGE_GEN, QUALITY_TAGS, UC_PRESET_TEXT, estimateAnlas } from './models';
+import { DEFAULT_IMAGE_GEN, QUALITY_TAGS, UC_PRESET_TEXT, estimateAnlas, imageModel } from './models';
 
 describe('image payload', () => {
+  it('defaults to V5 Full with the V4-style body V5 requires', () => {
+    expect(DEFAULT_IMAGE_GEN.model).toBe('nai-diffusion-5-full');
+    const p = buildImagePayload({ seed: 7, settings: { ...DEFAULT_IMAGE_GEN, prompt: '雨の夜の少女' } });
+    const params = p.parameters as Record<string, any>;
+    expect(p.model).toBe('nai-diffusion-5-full');
+    expect(params.params_version).toBe(4);
+    // V5 returns 500 without these
+    expect(params.v4_prompt.caption.base_caption).toBe('雨の夜の少女');
+    expect(params.v4_negative_prompt).toBeDefined();
+    // no guessed quality tags for V5
+    expect(p.input).toBe('雨の夜の少女');
+    expect(params.prompt).toBe('雨の夜の少女');
+  });
+
+  it('allows many characters on V5', () => {
+    expect(imageModel('nai-diffusion-5-curated').maxCharacters).toBeGreaterThan(imageModel('nai-diffusion-4-5-full').maxCharacters);
+  });
+
   it('builds a V4 payload with characters and coordinates', () => {
     const p = buildImagePayload({
       seed: 42,
-      settings: { ...DEFAULT_IMAGE_GEN, characters: [{ id: 'c', prompt: 'girl', uc: 'bad', x: 0.3, y: 0.5, enabled: true }], useCoords: true },
+      settings: { ...DEFAULT_IMAGE_GEN, model: 'nai-diffusion-4-5-full', characters: [{ id: 'c', prompt: 'girl', uc: 'bad', x: 0.3, y: 0.5, enabled: true }], useCoords: true },
     });
     const params = p.parameters as Record<string, any>;
     expect(p.model).toBe('nai-diffusion-4-5-full');
+    expect(params.params_version).toBe(3);
     expect(p.action).toBe('generate');
     expect(params.seed).toBe(42);
     expect(params.v4_prompt.caption.char_captions[0]).toEqual({ char_caption: 'girl', centers: [{ x: 0.3, y: 0.5 }] });
@@ -21,7 +40,7 @@ describe('image payload', () => {
   });
 
   it('appends quality tags and UC preset', () => {
-    const p = buildImagePayload({ seed: 1, settings: { ...DEFAULT_IMAGE_GEN, prompt: 'cat', negative: 'dog', ucPreset: 1 } });
+    const p = buildImagePayload({ seed: 1, settings: { ...DEFAULT_IMAGE_GEN, model: 'nai-diffusion-4-5-full', prompt: 'cat', negative: 'dog', ucPreset: 1 } });
     expect(p.input).toBe('cat' + QUALITY_TAGS['nai-diffusion-4-5-full']);
     expect((p.parameters as Record<string, unknown>).negative_prompt).toBe(`${UC_PRESET_TEXT[1]}, dog`);
     const raw = buildImagePayload({ seed: 1, settings: { ...DEFAULT_IMAGE_GEN, prompt: 'cat', qualityToggle: false, ucPreset: 3 } });

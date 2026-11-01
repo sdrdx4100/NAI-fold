@@ -1,12 +1,25 @@
 import type { ImageGenSettings } from './types';
 
-export const IMAGE_MODELS = [
-  { id: 'nai-diffusion-4-5-full', name: 'NAI Diffusion V4.5 Full', v4: true, furry: false },
-  { id: 'nai-diffusion-4-5-curated', name: 'NAI Diffusion V4.5 Curated', v4: true, furry: false },
-  { id: 'nai-diffusion-4-full', name: 'NAI Diffusion V4 Full', v4: true, furry: false },
-  { id: 'nai-diffusion-4-curated-preview', name: 'NAI Diffusion V4 Curated', v4: true, furry: false },
-  { id: 'nai-diffusion-3', name: 'NAI Diffusion Anime V3', v4: false, furry: false },
-  { id: 'nai-diffusion-furry-3', name: 'NAI Diffusion Furry V3', v4: false, furry: true },
+export interface ImageModelInfo {
+  id: string;
+  name: string;
+  /** Uses the V4-style request body (v4_prompt / character captions). V4, V4.5 and V5 all do. */
+  v4: boolean;
+  v5: boolean;
+  furry: boolean;
+  /** Max character prompts the UI allows. V5 handled up to 22 characters in NovelAI's own tests. */
+  maxCharacters: number;
+}
+
+export const IMAGE_MODELS: ImageModelInfo[] = [
+  { id: 'nai-diffusion-5-full', name: 'NAI Diffusion V5 Full', v4: true, v5: true, furry: false, maxCharacters: 22 },
+  { id: 'nai-diffusion-5-curated', name: 'NAI Diffusion V5 Curated', v4: true, v5: true, furry: false, maxCharacters: 22 },
+  { id: 'nai-diffusion-4-5-full', name: 'NAI Diffusion V4.5 Full', v4: true, v5: false, furry: false, maxCharacters: 6 },
+  { id: 'nai-diffusion-4-5-curated', name: 'NAI Diffusion V4.5 Curated', v4: true, v5: false, furry: false, maxCharacters: 6 },
+  { id: 'nai-diffusion-4-full', name: 'NAI Diffusion V4 Full', v4: true, v5: false, furry: false, maxCharacters: 6 },
+  { id: 'nai-diffusion-4-curated-preview', name: 'NAI Diffusion V4 Curated', v4: true, v5: false, furry: false, maxCharacters: 6 },
+  { id: 'nai-diffusion-3', name: 'NAI Diffusion Anime V3', v4: false, v5: false, furry: false, maxCharacters: 0 },
+  { id: 'nai-diffusion-furry-3', name: 'NAI Diffusion Furry V3', v4: false, v5: false, furry: true, maxCharacters: 0 },
 ];
 
 export const imageModel = (id: string) => IMAGE_MODELS.find((m) => m.id === id) ?? IMAGE_MODELS[0];
@@ -29,6 +42,10 @@ export const UC_PRESETS = [
   { id: 3, name: 'None' },
 ];
 
+/**
+ * Tags appended when "quality tags" is on. NovelAI has not published V5's quality tag string,
+ * so V5 models append nothing (the toggle is hidden for them) rather than guessing.
+ */
 export const QUALITY_TAGS: Record<string, string> = {
   'nai-diffusion-4-5-full': ', location, very aesthetic, masterpiece, no text',
   'nai-diffusion-4-5-curated': ', location, masterpiece, no text, -0.8::feet::, rating:general',
@@ -56,7 +73,7 @@ export const SIZE_PRESETS = [
 ];
 
 export const DEFAULT_IMAGE_GEN: ImageGenSettings = {
-  model: 'nai-diffusion-4-5-full',
+  model: 'nai-diffusion-5-full',
   prompt: '1girl, solo, standing, city at night, neon lights, rain, looking at viewer',
   negative: '',
   qualityToggle: true,
