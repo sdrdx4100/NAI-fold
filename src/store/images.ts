@@ -18,7 +18,7 @@ interface ImageState {
   url: (id: string) => Promise<string | null>;
   blob: (id: string) => Promise<Blob | undefined>;
   select: (id: string | null) => void;
-  generate: (storyId: string | null, override?: Partial<ImageGenSettings>) => Promise<void>;
+  generate: (override?: Partial<ImageGenSettings>) => Promise<void>;
   stop: () => void;
   remove: (id: string) => Promise<void>;
   toggleFavorite: (id: string) => void;
@@ -53,7 +53,7 @@ export const useImages = create<ImageState>((set, get) => ({
 
   select: (selectedId) => set({ selectedId }),
 
-  generate: async (storyId, override) => {
+  generate: async (override) => {
     if (get().generating) return;
     const st = useSettings.getState();
     const settings: ImageGenSettings = { ...st.imageGen, ...override };
@@ -78,7 +78,6 @@ export const useImages = create<ImageState>((set, get) => ({
       for (let i = 0; i < res.images.length; i++) {
         const img: GeneratedImage = {
           id: uid(),
-          storyId,
           createdAt: Date.now() + i,
           seed: res.seed + i,
           width: settings.width,
@@ -131,7 +130,6 @@ export const useImages = create<ImageState>((set, get) => ({
     const st = useSettings.getState();
     const img: GeneratedImage = {
       id: uid(),
-      storyId: null,
       createdAt: Date.now(),
       seed: 0,
       width: w,

@@ -1,97 +1,3 @@
-export type Origin = 'prompt' | 'user' | 'ai' | 'edit';
-
-export interface Segment {
-  text: string;
-  origin: Origin;
-}
-
-export interface LoreEntry {
-  id: string;
-  displayName: string;
-  text: string;
-  keys: string[];
-  enabled: boolean;
-  alwaysOn: boolean;
-  /** How many characters from the end of the story are scanned for keys. */
-  searchRange: number;
-  /** Higher = placed earlier and kept first when trimming. */
-  priority: number;
-  caseSensitive: boolean;
-  category: string;
-}
-
-export type TextEndpoint = 'native' | 'openai';
-
-export interface TextGenSettings {
-  model: string;
-  endpoint: TextEndpoint;
-  temperature: number;
-  max_length: number;
-  min_length: number;
-  top_k: number;
-  top_p: number;
-  top_a: number;
-  min_p: number;
-  typical_p: number;
-  tail_free_sampling: number;
-  repetition_penalty: number;
-  repetition_penalty_range: number;
-  repetition_penalty_slope: number;
-  repetition_penalty_frequency: number;
-  repetition_penalty_presence: number;
-  phrase_rep_pen: 'off' | 'very_light' | 'light' | 'medium' | 'aggressive' | 'very_aggressive';
-  stop_sequences: string[];
-  banned_strings: string[];
-  /** Total context budget in tokens (including the output). */
-  context_limit: number;
-}
-
-export interface StoryContextSettings {
-  authorsNoteDepth: number; // newlines from the end
-  attgEnabled: boolean;
-  attg: { author: string; title: string; tags: string; genre: string };
-  style: string; // e.g. "[ S: 4 ]"
-  trimTrailingSpaces: boolean;
-}
-
-export interface HistoryNode {
-  id: string;
-  parentId: string | null;
-  childIds: string[];
-  segments: Segment[];
-  kind: 'root' | 'gen' | 'edit' | 'retry';
-  at: number;
-}
-
-export interface Story {
-  id: string;
-  title: string;
-  description: string;
-  tags: string[];
-  favorite: boolean;
-  createdAt: number;
-  updatedAt: number;
-  segments: Segment[];
-  memory: string;
-  authorsNote: string;
-  lorebook: LoreEntry[];
-  gen: TextGenSettings;
-  ctx: StoryContextSettings;
-  history: { nodes: Record<string, HistoryNode>; currentId: string };
-}
-
-export interface StoryMeta {
-  id: string;
-  title: string;
-  description: string;
-  tags: string[];
-  favorite: boolean;
-  createdAt: number;
-  updatedAt: number;
-  preview: string;
-  chars: number;
-}
-
 export interface CharacterPrompt {
   id: string;
   prompt: string;
@@ -106,7 +12,7 @@ export interface ImageGenSettings {
   prompt: string;
   negative: string;
   qualityToggle: boolean;
-  ucPreset: number; // 0 heavy, 1 light, 2 human focus / furry, 3 none (model-dependent)
+  ucPreset: number; // 0 heavy, 1 light, 2 human focus, 3 none
   width: number;
   height: number;
   steps: number;
@@ -129,7 +35,6 @@ export interface ImageGenSettings {
 
 export interface GeneratedImage {
   id: string;
-  storyId: string | null;
   createdAt: number;
   seed: number;
   width: number;
@@ -140,6 +45,14 @@ export interface GeneratedImage {
   settings: ImageGenSettings;
   favorite: boolean;
   mock: boolean;
+}
+
+export interface PromptPreset {
+  id: string;
+  name: string;
+  prompt: string;
+  negative: string;
+  characters: CharacterPrompt[];
 }
 
 export interface Subscription {

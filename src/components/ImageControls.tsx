@@ -1,14 +1,10 @@
-import { useState } from 'react';
 import { useImageUrl } from '../hooks/useImageUrl';
-import { providerFor } from '../lib/api';
 import { IMAGE_MODELS, NOISE_SCHEDULES, SAMPLERS, SIZE_PRESETS, UC_PRESETS, estimateAnlas, imageModel } from '../lib/models';
-import { segmentsText } from '../lib/segments';
 import type { CharacterPrompt, ImageGenSettings } from '../lib/types';
+import { PresetSection } from './PresetSection';
 import { pickFile, randomSeed, uid } from '../lib/util';
 import { useImages } from '../store/images';
 import { useSettings } from '../store/settings';
-import { useStories } from '../store/stories';
-import { toast } from '../store/ui';
 import { Icon } from './Icon';
 import { Field, Section, Slider, Toggle } from './ui';
 
@@ -50,37 +46,15 @@ export function ImageControls() {
   const s = useSettings((st) => st.imageGen);
   const set = useSettings((st) => st.setImageGen);
   const sub = useSettings((st) => st.subscription);
-  const api = useSettings((st) => st.api);
   const generating = useImages((st) => st.generating);
   const generate = useImages((st) => st.generate);
   const stop = useImages((st) => st.stop);
   const addUpload = useImages((st) => st.addUpload);
-  const story = useStories((st) => st.current);
   const baseUrl = useImageUrl(s.baseImageId);
-  const [tagging, setTagging] = useState(false);
   const info = imageModel(s.model);
   const cost = estimateAnlas(s, sub?.tier ?? 0);
 
   const setChar = (i: number, c: CharacterPrompt) => set({ characters: s.characters.map((x, j) => (j === i ? c : x)) });
-
-  const sceneToTags = async () => {
-    if (!story) return;
-    setTagging(true);
-    try {
-      const tail = segmentsText(story.segments).slice(-1500);
-      const ctx = `${tail}\n\n[ Describe the current scene above as a comma-separated list of Danbooru-style image tags. ]\n[TAGS]`;
-      const out = await providerFor(api).generateText(api, { context: ctx, settings: { ...story.gen, max_length: 60, temperature: 0.7 } });
-      const tags = out.split('\n')[0].replace(/^[\s:：]+/, '').trim();
-      if (tags) {
-        set({ prompt: tags });
-        toast('シーンからタグを生成しました', 'success');
-      }
-    } catch (e) {
-      toast((e as Error).message, 'error');
-    } finally {
-      setTagging(false);
-    }
-  };
 
   const ratioLabel = (w: number, h: number) => `${w}×${h}`;
 
@@ -97,18 +71,20 @@ export function ImageControls() {
               ))}
             </select>
           </Field>
-          <Field
-            label="プロンプト"
-            hint={
-              story ? (
-                <button className="btn small ghost" style={{ minHeight: 24, padding: '0 6px' }} onClick={sceneToTags} disabled={tagging}>
-                  <Icon name="wand" size={14} />
-                  {tagging ? '生成中…' : 'シーンからタグ'}
-                </button>
-              ) : undefined
-            }
-          >
-            <textarea className="textarea" rows={4} value={s.prompt} onChange={(e) => set({ prompt: e.target.value })} placeholder="1girl, solo, ..." />
+          <Field label="プロンプト" hint={<span className="kbd">Ctrl+Enter で生成</span>}>
+            <textarea
+              className="textarea"
+              rows={5}
+              value={s.prompt}
+              onChange={(e) => set({ prompt: e.target.value })}
+              onKeyDown={(e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                  e.preventDefault();
+                  void generate();
+                }
+              }}
+              placeholder="1girl, solo, ..."
+            />
           </Field>
           <Field label="除外したい要素 Undesired Content">
             <textarea className="textarea" rows={2} style={{ minHeight: 60 }} value={s.negative} onChange={(e) => set({ negative: e.target.value })} placeholder="blurry, lowres, ..." />
@@ -128,6 +104,8 @@ export function ImageControls() {
             </div>
           </div>
         </Section>
+
+        <PresetSection />
 
         {info.v4 && (
           <Section title={`キャラクター (${s.characters.length})`} defaultOpen={s.characters.length > 0}>
@@ -249,7 +227,7 @@ export function ImageControls() {
           )}
         </Section>
       </div>
-      <GenerateFooter cost={cost} generating={generating} onGenerate={() => void generate(story?.id ?? null)} onStop={stop} size={ratioLabel(s.width, s.height)} settings={s} />
+      <GenerateFooter cost={cost} generating={generating} onGenerate={() => void generate()} onStop={stop} size={ratioLabel(s.width, s.height)} settings={s} />
     </div>
   );
 }

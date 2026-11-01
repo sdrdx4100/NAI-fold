@@ -2,7 +2,7 @@
   "name": "nai-fold",
   "private": true,
   "version": "1.0.0",
-  "description": "Foldable-first unofficial NovelAI client (story + image generation)",
+  "description": "Foldable-first unofficial NovelAI image generation client",
   "type": "module",
   "scripts": {
     "dev": "vite --host",

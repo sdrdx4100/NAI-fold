@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 
-export type MainMode = 'story' | 'image';
-export type SideTab = 'story' | 'lore' | 'gen' | 'context' | 'image' | 'library';
-export type Modal = null | 'settings' | 'about' | 'storyMeta';
+export type Modal = null | 'settings';
+export type MainView = 'viewer' | 'grid';
 
 export interface Toast {
   id: number;
@@ -11,19 +10,13 @@ export interface Toast {
 }
 
 interface UIState {
-  mode: MainMode;
-  sideTab: SideTab;
-  libraryOpen: boolean; // drawer (single/dual)
-  sideOpen: boolean; // sheet (single)
+  view: MainView;
+  sideOpen: boolean; // controls sheet (single layout)
   modal: Modal;
   toasts: Toast[];
-  loreSelected: string | null;
-  setMode: (m: MainMode) => void;
-  setSideTab: (t: SideTab) => void;
-  setLibraryOpen: (v: boolean) => void;
+  setView: (v: MainView) => void;
   setSideOpen: (v: boolean) => void;
   openModal: (m: Modal) => void;
-  setLoreSelected: (id: string | null) => void;
   toast: (text: string, kind?: Toast['kind']) => void;
   dismiss: (id: number) => void;
 }
@@ -31,19 +24,13 @@ interface UIState {
 let tid = 1;
 
 export const useUI = create<UIState>((set, get) => ({
-  mode: 'story',
-  sideTab: 'story',
-  libraryOpen: false,
+  view: 'viewer',
   sideOpen: false,
   modal: null,
   toasts: [],
-  loreSelected: null,
-  setMode: (mode) => set({ mode }),
-  setSideTab: (sideTab) => set({ sideTab }),
-  setLibraryOpen: (libraryOpen) => set({ libraryOpen }),
+  setView: (view) => set({ view }),
   setSideOpen: (sideOpen) => set({ sideOpen }),
   openModal: (modal) => set({ modal }),
-  setLoreSelected: (loreSelected) => set({ loreSelected }),
   toast: (text, kind = 'info') => {
     const id = tid++;
     set({ toasts: [...get().toasts, { id, kind, text }].slice(-4) });

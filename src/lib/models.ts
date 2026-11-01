@@ -1,22 +1,4 @@
-import type { ImageGenSettings, TextEndpoint, TextGenSettings } from './types';
-
-export interface TextModelInfo {
-  id: string;
-  name: string;
-  description: string;
-  endpoint: TextEndpoint;
-  maxContext: number;
-}
-
-export const TEXT_MODELS: TextModelInfo[] = [
-  { id: 'glm-4-6', name: 'GLM 4.6', description: '最新・大規模。長文脈と指示追従に強い', endpoint: 'openai', maxContext: 28000 },
-  { id: 'llama-3-erato-v1', name: 'Erato', description: 'Llama 3 70B ベースのストーリー特化', endpoint: 'native', maxContext: 8192 },
-  { id: 'kayra-v1', name: 'Kayra', description: '独自13Bモデル。軽快で安定', endpoint: 'native', maxContext: 8192 },
-  { id: 'clio-v1', name: 'Clio', description: '旧世代の高速モデル', endpoint: 'native', maxContext: 8192 },
-];
-
-export const textModel = (id: string): TextModelInfo =>
-  TEXT_MODELS.find((m) => m.id === id) ?? { id, name: id, description: 'カスタムモデル', endpoint: 'native', maxContext: 8192 };
+import type { ImageGenSettings } from './types';
 
 export const IMAGE_MODELS = [
   { id: 'nai-diffusion-4-5-full', name: 'NAI Diffusion V4.5 Full', v4: true, furry: false },
@@ -71,65 +53,6 @@ export const SIZE_PRESETS = [
   { name: '横 小', w: 768, h: 512 },
   { name: '壁紙 Wallpaper', w: 1472, h: 832 },
   { name: '折りたたみ 内側', w: 1088, h: 1344 },
-];
-
-export const PHRASE_REP_PEN = ['off', 'very_light', 'light', 'medium', 'aggressive', 'very_aggressive'] as const;
-
-export const DEFAULT_TEXT_GEN: TextGenSettings = {
-  model: 'glm-4-6',
-  endpoint: 'openai',
-  temperature: 1.0,
-  max_length: 120,
-  min_length: 1,
-  top_k: 0,
-  top_p: 0.95,
-  top_a: 0,
-  min_p: 0.05,
-  typical_p: 1,
-  tail_free_sampling: 1,
-  repetition_penalty: 1.05,
-  repetition_penalty_range: 2048,
-  repetition_penalty_slope: 0,
-  repetition_penalty_frequency: 0,
-  repetition_penalty_presence: 0,
-  phrase_rep_pen: 'off',
-  stop_sequences: [],
-  banned_strings: [],
-  context_limit: 8192,
-};
-
-export interface TextPreset {
-  id: string;
-  name: string;
-  builtin?: boolean;
-  settings: Partial<TextGenSettings>;
-}
-
-export const BUILTIN_PRESETS: TextPreset[] = [
-  {
-    id: 'balanced',
-    name: 'バランス Balanced',
-    builtin: true,
-    settings: { temperature: 1.0, top_p: 0.95, top_k: 0, min_p: 0.05, repetition_penalty: 1.05, phrase_rep_pen: 'off' },
-  },
-  {
-    id: 'creative',
-    name: '創造的 Creative',
-    builtin: true,
-    settings: { temperature: 1.25, top_p: 0.98, top_k: 0, min_p: 0.03, repetition_penalty: 1.08, phrase_rep_pen: 'light' },
-  },
-  {
-    id: 'coherent',
-    name: '堅実 Coherent',
-    builtin: true,
-    settings: { temperature: 0.8, top_p: 0.9, top_k: 40, min_p: 0.08, repetition_penalty: 1.03, phrase_rep_pen: 'very_light' },
-  },
-  {
-    id: 'wild',
-    name: '奔放 Wild',
-    builtin: true,
-    settings: { temperature: 1.5, top_p: 1, top_k: 0, min_p: 0.02, top_a: 0.1, repetition_penalty: 1.1, phrase_rep_pen: 'medium' },
-  },
 ];
 
 export const DEFAULT_IMAGE_GEN: ImageGenSettings = {

@@ -1,9 +1,8 @@
 import { unzipSync } from 'fflate';
 import { imageModel, QUALITY_TAGS, TIER_NAMES, UC_PRESET_TEXT } from '../models';
-import type { Subscription, TextGenSettings } from '../types';
+import type { Subscription } from '../types';
 import { blobToBase64 } from '../util';
-import { readSSE } from './sse';
-import { ApiError, type ApiConfig, type ImageRequest, type ImageResult, type Provider, type TextRequest } from './types';
+import { ApiError, type ApiConfig, type ImageRequest, type ImageResult, type Provider } from './types';
 
 const join = (base: string, path: string) => base.replace(/\/+$/, '') + path;
 
@@ -33,117 +32,6 @@ async function check(res: Response): Promise<Response> {
     500: 'サーバーエラーが発生しました',
   };
   throw new ApiError(`${friendly[res.status] ?? 'APIエラー'}: ${msg}`, res.status);
-}
-
-// ---------- text ----------
-
-function nativeParameters(s: TextGenSettings) {
-  const p: Record<string, unknown> = {
-    use_string: true,
-    temperature: s.temperature,
-    max_length: s.max_length,
-    min_length: Math.min(s.min_length, s.max_length),
-    top_k: s.top_k,
-    top_p: s.top_p,
-    top_a: s.top_a,
-    min_p: s.min_p,
-    typical_p: s.typical_p,
-    tail_free_sampling: s.tail_free_sampling,
-    repetition_penalty: s.repetition_penalty,
-    repetition_penalty_range: s.repetition_penalty_range,
-    repetition_penalty_slope: s.repetition_penalty_slope,
-    repetition_penalty_frequency: s.repetition_penalty_frequency,
-    repetition_penalty_presence: s.repetition_penalty_presence,
-    phrase_rep_pen: s.phrase_rep_pen,
-    generate_until_sentence: true,
-    return_full_text: false,
-    prefix: 'vanilla',
-  };
-  if (s.stop_sequences.length) p.stop_sequences = s.stop_sequences;
-  if (s.banned_strings.length) p.bad_words_ids = []; // token ids are model specific; strings are filtered client-side
-  return p;
-}
-
-function openaiBody(s: TextGenSettings, prompt: string, stream: boolean) {
-  const body: Record<string, unknown> = {
-    model: s.model,
-    prompt,
-    max_tokens: s.max_length,
-    min_tokens: s.min_length,
-    temperature: s.temperature,
-    top_p: s.top_p,
-    min_p: s.min_p,
-    frequency_penalty: s.repetition_penalty_frequency,
-    presence_penalty: s.repetition_penalty_presence,
-    repetition_penalty: s.repetition_penalty,
-    stream,
-  };
-  if (s.top_k > 0) body.top_k = s.top_k;
-  if (s.stop_sequences.length) body.stop = s.stop_sequences.slice(0, 4);
-  return body;
-}
-
-async function generateText(cfg: ApiConfig, req: TextRequest): Promise<string> {
-  const s = req.settings;
-  const stream = cfg.stream && !!req.onToken;
-  let out = '';
-  const emit = (t: string) => {
-    if (!t) return;
-    out += t;
-    req.onToken?.(t);
-  };
-
-  if (s.endpoint === 'openai') {
-    const res = await check(
-      await fetch(join(cfg.textBase, '/oa/v1/completions'), {
-        method: 'POST',
-        headers: headers(cfg, stream ? 'text/event-stream' : 'application/json'),
-        body: JSON.stringify(openaiBody(s, req.context, stream)),
-        signal: req.signal,
-      }),
-    );
-    if (stream && res.body) {
-      for await (const ev of readSSE(res.body, req.signal)) {
-        if (!ev.data || ev.data === '[DONE]') continue;
-        try {
-          const j = JSON.parse(ev.data);
-          emit(j.choices?.[0]?.text ?? j.choices?.[0]?.delta?.content ?? '');
-        } catch {
-          /* keep-alive */
-        }
-      }
-    } else {
-      const j = await res.json();
-      emit(j.choices?.[0]?.text ?? '');
-    }
-    return out;
-  }
-
-  const body = JSON.stringify({ input: req.context, model: s.model, parameters: nativeParameters(s) });
-  const res = await check(
-    await fetch(join(cfg.textBase, stream ? '/ai/generate-stream' : '/ai/generate'), {
-      method: 'POST',
-      headers: headers(cfg, stream ? 'text/event-stream' : 'application/json'),
-      body,
-      signal: req.signal,
-    }),
-  );
-  if (stream && res.body) {
-    for await (const ev of readSSE(res.body, req.signal)) {
-      if (!ev.data) continue;
-      try {
-        const j = JSON.parse(ev.data);
-        if (j.error) throw new ApiError(String(j.error));
-        emit(j.token ?? '');
-      } catch (e) {
-        if (e instanceof ApiError) throw e;
-      }
-    }
-  } else {
-    const j = await res.json();
-    emit(j.output ?? '');
-  }
-  return out;
 }
 
 // ---------- image ----------
@@ -257,4 +145,4 @@ async function getSubscription(cfg: ApiConfig): Promise<Subscription> {
   };
 }
 
-export const novelaiProvider: Provider = { generateText, generateImages, getSubscription };
+export const novelaiProvider: Provider = { generateImages, getSubscription };

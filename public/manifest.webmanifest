@@ -1,7 +1,7 @@
 {
   "name": "NAI Fold",
   "short_name": "NAI Fold",
-  "description": "Foldable-first unofficial NovelAI client",
+  "description": "Foldable-first unofficial NovelAI image generation client",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

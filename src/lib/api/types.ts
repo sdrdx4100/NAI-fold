@@ -1,19 +1,10 @@
-import type { ImageGenSettings, Subscription, TextGenSettings } from '../types';
+import type { ImageGenSettings, Subscription } from '../types';
 
 export interface ApiConfig {
   token: string;
   mock: boolean;
   apiBase: string;
-  textBase: string;
   imageBase: string;
-  stream: boolean;
-}
-
-export interface TextRequest {
-  context: string;
-  settings: TextGenSettings;
-  signal?: AbortSignal;
-  onToken?: (token: string) => void;
 }
 
 export interface ImageRequest {
@@ -30,7 +21,6 @@ export interface ImageResult {
 }
 
 export interface Provider {
-  generateText(cfg: ApiConfig, req: TextRequest): Promise<string>;
   generateImages(cfg: ApiConfig, req: ImageRequest): Promise<ImageResult>;
   getSubscription(cfg: ApiConfig): Promise<Subscription>;
 }
