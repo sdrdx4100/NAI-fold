@@ -11,6 +11,7 @@ const config: CapacitorConfig = {
   plugins: {
     // Use the native HTTP stack for non-streaming requests to avoid CORS issues in the WebView.
     CapacitorHttp: { enabled: false },
+    LocalNotifications: { smallIcon: 'ic_stat_nai', iconColor: '#f5f3c2' },
   },
 };
 

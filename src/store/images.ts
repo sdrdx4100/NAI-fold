@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { isMock, providerFor } from '../lib/api';
 import { dbAll, dbDelete, dbGet, dbPut } from '../lib/db';
 import type { GeneratedImage, ImageGenSettings } from '../lib/types';
-import { haptic, randomSeed, uid } from '../lib/util';
+import { ensureNotificationPermission, isNative, notifyIfBackground, saveToGallery } from '../lib/native';
+import { haptic, randomSeed, safeFilename, uid } from '../lib/util';
 import { useSettings } from './settings';
 import { toast } from './ui';
 
@@ -62,6 +63,7 @@ export const useImages = create<ImageState>((set, get) => ({
       return;
     }
     const seed = settings.seed ?? randomSeed();
+    if (isNative() && st.ui.notifyOnDone) void ensureNotificationPermission();
     const ac = new AbortController();
     set({ generating: true, progress: 0.02, abort: ac });
     if (st.ui.haptics) haptic(10);
@@ -93,12 +95,31 @@ export const useImages = create<ImageState>((set, get) => ({
         await dbPut('images', img.id, img);
         created.push(img);
       }
-      set({ images: [...created.reverse(), ...get().images], selectedId: created[0]?.id ?? get().selectedId });
+      // created[i] was made from res.images[i]; newest-first order for the gallery
+      const newestFirst = [...created].reverse();
+      set({ images: [...newestFirst, ...get().images], selectedId: newestFirst[0]?.id ?? get().selectedId });
+      if (isNative() && st.ui.autoSaveGallery) {
+        let saved = 0;
+        for (let i = 0; i < created.length; i++) {
+          try {
+            await saveToGallery(res.images[i], galleryFilename(created[i]));
+            saved++;
+          } catch (e) {
+            toast(`写真への自動保存に失敗しました: ${(e as Error).message}`, 'error');
+            break;
+          }
+        }
+        if (saved) toast(`${saved}枚を写真に保存しました`, 'success');
+      }
+      if (st.ui.notifyOnDone) void notifyIfBackground('画像の生成が完了しました', `${created.length}枚 · ${settings.prompt.slice(0, 60)}`);
       if (!isMock(st.api)) void st.refreshSubscription().catch(() => undefined);
       if (st.ui.haptics) haptic(16);
     } catch (e) {
       const err = e as Error;
-      if (err.name !== 'AbortError') toast(err.message || '画像生成に失敗しました', 'error');
+      if (err.name !== 'AbortError') {
+        toast(err.message || '画像生成に失敗しました', 'error');
+        if (st.ui.notifyOnDone) void notifyIfBackground('画像の生成に失敗しました', err.message || '');
+      }
     } finally {
       set({ generating: false, progress: 0, abort: null });
     }
@@ -147,3 +168,7 @@ export const useImages = create<ImageState>((set, get) => ({
     return img;
   },
 }));
+
+export function galleryFilename(img: GeneratedImage): string {
+  return `${safeFilename(img.prompt.split(',').slice(0, 3).join('_').trim()).replace(/\s+/g, '_')}_${img.seed}.png`;
+}

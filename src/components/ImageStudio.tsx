@@ -3,7 +3,8 @@ import { useImageUrl } from '../hooks/useImageUrl';
 import { imageModel } from '../lib/models';
 import type { GeneratedImage } from '../lib/types';
 import { downloadBlob, safeFilename } from '../lib/util';
-import { useImages } from '../store/images';
+import { GALLERY_ALBUM, isNative, saveToGallery } from '../lib/native';
+import { galleryFilename, useImages } from '../store/images';
 import { useSettings } from '../store/settings';
 import { toast, useUI } from '../store/ui';
 import { Icon } from './Icon';
@@ -175,12 +176,29 @@ export function ImageStudio({ compact, showStrip = true }: { compact?: boolean; 
           <IconButton icon="star" label={sel.favorite ? 'お気に入り解除' : 'お気に入り'} active={sel.favorite} onClick={() => toggleFavorite(sel.id)} />
           <IconButton
             icon="download"
-            label="保存"
+            label={isNative() ? '写真に保存' : '保存'}
             onClick={async () => {
               const b = await useImages.getState().blob(sel.id);
-              if (b) void downloadBlob(b, `${safeFilename(sel.prompt.slice(0, 40))}_${sel.seed}.png`);
+              if (!b) return;
+              if (!isNative()) return void downloadBlob(b, `${safeFilename(sel.prompt.slice(0, 40))}_${sel.seed}.png`);
+              try {
+                await saveToGallery(b, galleryFilename(sel));
+                toast(`写真に保存しました（Pictures/${GALLERY_ALBUM}）`, 'success');
+              } catch (e) {
+                toast((e as Error).message || '写真への保存に失敗しました', 'error');
+              }
             }}
           />
+          {isNative() && (
+            <IconButton
+              icon="upload"
+              label="共有"
+              onClick={async () => {
+                const b = await useImages.getState().blob(sel.id);
+                if (b) void downloadBlob(b, galleryFilename(sel));
+              }}
+            />
+          )}
           <IconButton
             icon="sliders"
             label="この設定を再利用"

@@ -15,6 +15,10 @@ export interface UISettings {
   swapPanes: boolean;
   splitRatio: number;
   haptics: boolean;
+  /** App only: save every generated image to Pictures/NAI Fold automatically. */
+  autoSaveGallery: boolean;
+  /** App only: notify when a generation finishes while the app is in the background. */
+  notifyOnDone: boolean;
 }
 
 export interface SettingsState {
@@ -46,6 +50,8 @@ export const DEFAULT_UI: UISettings = {
   swapPanes: false,
   splitRatio: 0.5,
   haptics: true,
+  autoSaveGallery: false,
+  notifyOnDone: true,
 };
 
 const persist = debounce((s: SettingsState) => {

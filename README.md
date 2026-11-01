@@ -66,4 +66,10 @@ npm run cap:open   # Android Studio で開いて実行
 ```
 
 GitHub Actions（`.github/workflows/ci.yml`）が push のたびにテストとビルドを行い、デバッグ用 APK を Artifacts に添付します。
-アプリ内で画像を保存すると、Android の共有シートが開きます。
+
+### アプリ版だけの機能
+
+- **写真アプリに直接保存**：保存ボタンを押すと、共有シートを通さずに端末の `Pictures/NAI Fold` アルバムへ保存します（Google フォトや Samsung ギャラリーにそのまま表示されます）。設定で「生成した画像を写真に自動保存」をオンにすると、生成するたびに自動で保存します。他のアプリに送りたいときは「共有」ボタンを使ってください。
+  - Android 10 以降は権限なしで保存します。Android 9 以前は初回だけストレージ権限を求めます。
+  - 実装：`android/app/src/main/java/dev/naifold/app/GallerySaverPlugin.java`（MediaStore を使用）
+- **生成完了の通知**：生成中に別のアプリへ切り替えても、終わったら（失敗したときも）通知します。通知をタップするとアプリに戻ります。Android 13 以降は初回に通知の許可を求めます。設定からオフにもできます。

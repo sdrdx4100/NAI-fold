@@ -3,6 +3,7 @@ import type { FoldInfo } from '../hooks/useFoldLayout';
 import { dbAll, dbClear } from '../lib/db';
 import type { GeneratedImage } from '../lib/types';
 import { downloadBlob, pickFile } from '../lib/util';
+import { ensureNotificationPermission, GALLERY_ALBUM, isNative } from '../lib/native';
 import { useImages } from '../store/images';
 import { useSettings, type LayoutPref, type Theme } from '../store/settings';
 import { toast, useUI } from '../store/ui';
@@ -149,6 +150,32 @@ export function SettingsModal({ fold }: { fold: FoldInfo }) {
               </button>
             ))}
           </div>
+
+          <h3>アプリ版の機能</h3>
+          {isNative() ? (
+            <>
+              <Toggle
+                label="生成した画像を写真に自動保存"
+                desc={`生成するたびに Pictures/${GALLERY_ALBUM} に保存します`}
+                checked={ui.autoSaveGallery}
+                onChange={(v) => setUI({ autoSaveGallery: v })}
+              />
+              <Toggle
+                label="生成完了を通知"
+                desc="生成中に別のアプリへ切り替えても、終わったら通知します"
+                checked={ui.notifyOnDone}
+                onChange={(v) => {
+                  setUI({ notifyOnDone: v });
+                  if (v)
+                    void ensureNotificationPermission().then((ok) => {
+                      if (!ok) toast('通知が許可されていません。端末の設定から NAI Fold の通知を許可してください', 'error');
+                    });
+                }}
+              />
+            </>
+          ) : (
+            <p className="hint">写真への直接保存と生成完了の通知は、Android アプリ版（APK）で使えます。</p>
+          )}
 
           <h3>その他</h3>
           <Toggle label="触覚フィードバック" checked={ui.haptics} onChange={(v) => setUI({ haptics: v })} />
